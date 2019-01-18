@@ -53,4 +53,10 @@ macx {
 DISTFILES += \
     qml/scenes/GameScene2048.qml \
     qml/gameElements/Tile.qml \
-    qml/common/SceneBase.qml
+    qml/common/SceneBase.qml \
+    qml/common/ShadowText.qml \
+    qml/common/GameBackground.qml \
+    qml/buttons/BackButton.qml \
+    qml/buttons/Button2048.qml \
+    qml/scenes/SelectLevelScene.qml \
+    qml/common/bigInteger.js

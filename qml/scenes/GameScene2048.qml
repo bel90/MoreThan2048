@@ -2,6 +2,7 @@ import VPlay 2.0
 import QtQuick 2.2
 import "../common/"
 import "../gameElements/"
+import "../buttons/"
 
 SceneBase {
     id: gameScene
@@ -109,7 +110,7 @@ SceneBase {
         //Befüle das Feld mit den gespeicherten Feldern neu
         for (var i = 1; i < restoreArray.length; i++) {
             if (restoreArray[i] !== "null") {
-                var tileId = entityManager.createEntityFromUrlWithProperties(Qt.resolvedUrl("Tile.qml"), {"tileIndex": i - 1})
+                var tileId = entityManager.createEntityFromUrlWithProperties(Qt.resolvedUrl("../gameElements/Tile.qml"), {"tileIndex": i - 1})
                 tileItems[i - 1] = entityManager.getEntityById(tileId)
                 tileItems[i - 1].tileValue = parseInt(restoreArray[i])
             }
@@ -126,11 +127,11 @@ SceneBase {
 
     Image {
         anchors.fill: parent.gameWindowAnchorItem
-        source: "../assets/background2048.png"
+        source: "../../assets/background2048.png"
         fillMode: Image.PreserveAspectCrop
         ParticleVPlay {
             id: particle
-            fileName: "../assets/2048Flubber.json"
+            fileName: "../../assets/2048Flubber.json"
             autoStart: true
             x: gameScene.width / 2
             y: gameScene.height / 2
@@ -326,7 +327,7 @@ SceneBase {
         //get random emptyCells:
         var randomCellId = emptyCells[Math.floor(Math.random() * emptyCells.length)]
         //create new tile with a referenceID:
-        var tileId = entityManager.createEntityFromUrlWithProperties(Qt.resolvedUrl("Tile.qml"), {"tileIndex": randomCellId})
+        var tileId = entityManager.createEntityFromUrlWithProperties(Qt.resolvedUrl("../gameElements/Tile.qml"), {"tileIndex": randomCellId})
         //paste new Tile to the array
         tileItems[randomCellId] = entityManager.getEntityById(tileId)
         //remove the emptyCell from emptyCell array
