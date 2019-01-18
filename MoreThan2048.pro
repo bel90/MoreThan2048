@@ -54,4 +54,5 @@ DISTFILES += \
     qml/scenes/GameScene2048.qml \
     qml/gameElements/Tile.qml \
     qml/common/SceneBase.qml \
-    qml/buttons/BackButton.qml
+    qml/buttons/BackButton.qml \
+    qml/buttons/Button2048.qml
