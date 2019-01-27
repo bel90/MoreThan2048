@@ -59,4 +59,7 @@ DISTFILES += \
     qml/buttons/BackButton.qml \
     qml/buttons/Button2048.qml \
     qml/scenes/SelectLevelScene.qml \
-    qml/common/bigInteger.js
+    qml/common/bigInteger.js \
+    qml/common/BubbleBackground.qml \
+    qml/common/LevelBase.qml \
+    qml/common/gameFunctions.js

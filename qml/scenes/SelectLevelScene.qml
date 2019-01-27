@@ -2,28 +2,12 @@ import QtQuick 2.0
 import VPlay 2.0
 import "../common/"
 import "../buttons/"
+import "../common/bigInteger.js" as Big
 
 SceneBase {
     id: selectLevelScene
 
-    /*Rectangle {
-        anchors.fill: parent.gameWindowAnchorItem
-        color: "#dee3ed"
-    }*/
-
-    Image {
-        anchors.fill: parent.gameWindowAnchorItem
-        source: "../../assets/background2048.png"
-        fillMode: Image.PreserveAspectCrop
-        ParticleVPlay {
-            id: particle
-            fileName: "../../assets/2048Flubber.json"
-            autoStart: true
-            x: gameScene.width / 2
-            y: gameScene.height / 2
-            sourcePositionVariance: Qt.point(gameScene.width / 2, gameScene.height / 2)
-        }
-    }
+    BubbleBackground { }
 
     ShadowText {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -98,6 +82,23 @@ SceneBase {
             onClicked: {
                 setUpGame(9)
                 gameWindow.state = "gameScene"
+            }
+        }
+    }
+
+    Button2048 {
+        text: "test"
+        onClicked: {
+            /*
+            console.log(9872, 3453, Big.addTwoBigInt(Big.createBigInt(9872), Big.createBigInt(3453)))
+            console.log(9999, 9, Big.addTwoBigInt("9999999999999999999999999999999999999999999999999", Big.createBigInt(9)))
+            console.log(Big.addTwoBigInt("1896489489618989431584897896541236985247789426854556489789743123156465789798", "1984048904894098794563"))
+            */
+            var tmp = "1"
+            for (var i = 1; i <= 64; i++) {
+                tmp = Big.powBigInt(tmp)
+                console.log(i, tmp)
+                console.log(Big.bigIntToTile(tmp))
             }
         }
     }

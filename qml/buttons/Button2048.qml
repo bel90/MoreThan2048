@@ -1,5 +1,6 @@
 import QtQuick 2.0
 //import "../../assets"
+import "../common/"
 
 Rectangle {
     id: button2048
@@ -15,23 +16,16 @@ Rectangle {
 
     Image {
         id: but
-        source: "../../assets/7b.png"
+        source: "../../assets/11b.png" //"../../assets/7b.png"
         anchors.fill: parent
     }
 
-    Text {
-        x: butText.x + 1
-        y: butText.y + 1
-        font.pixelSize: butText.font.pixelSize
-        color: "black"
-        text: butText.text
-    }
-
-    Text {
+    ShadowText {
         id: butText
         anchors.centerIn: parent
-        font.pixelSize: 15
-        color: "white"
+        pixelSize: 15
+        color1: "black"
+        color2: "lightgrey"
     }
 
     MouseArea {

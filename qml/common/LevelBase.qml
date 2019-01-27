@@ -1,132 +1,51 @@
+import QtQuick 2.0
 import VPlay 2.0
-import QtQuick 2.2
-import "../common/"
-import "../gameElements/"
 import "../buttons/"
+import "../common/"
+import "../common/gameFunctions.js" as Fun
+import "../common/bigInteger.js" as Big
 
 SceneBase {
-    id: gameScene
+    id: levelBase //zuvor gameScene
 
-    property alias gameContainer: gameContainer
-
-    signal backButPressed
+    signal backButtonPressed
 
     //logical game size which is auto scaled
     width: gameWindow.logicalWidth
     height: gameWindow.logicalHeight
 
-    property int gridWidth: width - 20
-    property int gridSizeGame: 2
-    property int gridSizeGameSquared: gridSizeGame * gridSizeGame
-    property var emptyCells: []
-    property var tileItems: new Array(gridSizeGameSquared)
+    //Spiele Optionen.
+    property string levelID
+    property int newTilesPerMove: 1
 
-    property int score: 0
-    property int highscore: 0
+    property int gridWidth: width - 20
+    property int gridSizeHeight: 2
+    property int gridSizeWidth: value
+    property int gridSizeGame: gridSizeHeight * gridSizeWidth
+    //gridSizeGame war davor die größe eines einzelnen
+    //property int gridSizeGameSquared: gridSizeGame * gridSizeGame //Noch auskommentieren
+    property var emptyCells: []
+    property var tileItems: new Array(gridSizeGame)
+
+    property string Score: "0"
+    property string highscore: "0"
+    //Zum wiederherstellen des letzten Zustandes
+    //Muss den Zustand des Spielfeldes beinhalten und den letzten Highscore
     property var restoreStr
 
-    function setUpGame(gridSizeG) {
-        //Wenn kein Spielstand geladen wurde
-        if (!loadGame(gridSizeG)) {
-            resetGame(gridSizeG)
-
-            //create two random tiles
-            createNewTile()
-            createNewTile()
-            if (gridSizeGame > 4) {
-                createNewTile()
-                if (gridSizeGame > 6) createNewTile()
-            }
-        }
-
-        //Lade den highscore
-        var high = "highscore" + gridSizeGame
-        var hs = localStorage.getValue(high)
-        if (hs !== undefined) {
-            highscore = hs
-        } else {
-            highscore = 0
-        }
-    }
-
-    function resetGame(gridSizeG) {
-        gameoverText.visible = false;
-        entityManager.removeAllEntities()
-        gameScene.gridSizeGame = gridSizeG
-        score = 0
-        restoreStr = undefined
-        tileItems = new Array(gridSizeGameSquared)
-        //fill the main array with empty spaces
-        for (var i = 0; i < gridSizeGameSquared; i++) {
-            tileItems[i] = null
-        }
-        //collect empty cells positions
-        updateEmptyCells()
-    }
-
-    function saveGame() {
-        var key = "savedGame" + gridSizeGame
-        //Wenn GameOver ist lösche den letzten Spielstand im localStorage
-        if (isGameOver()) {
-            localStorage.clearValue(key)
-            return
-        }
-
-        //Den aktuellen Score noch mit speichern
-        var saveArray = score.toString()
-        //var saveArray = tileItems[0] === null ? null : tileItems[0].tileValue
-        for (var i = 0; i < tileItems.length; i++) {
-            saveArray += ";"
-            saveArray += tileItems[i] === null || tileItems[i] === undefined ? null : tileItems[i].tileValue
-        }
-
-        localStorage.setValue(key, saveArray)
-    }
-
-    //return true if game is loaded, false otherwise
-    function loadGame(gridSizeG) {
-        var key = "savedGame" + gridSizeG
-        var tmp = localStorage.getValue(key)
-        if (tmp !== undefined) {
-            //restore the game
-            restore(tmp, gridSizeG)
-
-            return true
-        }
-        return false
-    }
-
-    //Zum wiederherstellen des letzten Spielstandes (rückgängig machen des letzten Zuges)
-    //und zum laden eines gespeicherten Spielstandes
-    function restore(restoreString, gridSizeG) {
-        resetGame(gridSizeG)
-        var restoreArray = restoreString.split(";")
-
-        //Befüle das Feld mit den gespeicherten Feldern neu
-        for (var i = 1; i < restoreArray.length; i++) {
-            if (restoreArray[i] !== "null") {
-                var tileId = entityManager.createEntityFromUrlWithProperties(Qt.resolvedUrl("../gameElements/Tile.qml"), {"tileIndex": i - 1})
-                tileItems[i - 1] = entityManager.getEntityById(tileId)
-                tileItems[i - 1].tileValue = parseInt(restoreArray[i])
-            }
-        }
-        updateEmptyCells()
-        score = parseInt(restoreArray[0])
-    }
-
-    BubbleBackground { }
+    BubbleBackground {}
 
     ShadowText {
         id: bestScore
         text: "Best Score: " + highscore
         pixelSize: 15
-        anchors.top: gameScene.top
+        anchors.top: levelBase.top
         anchors.right: scoreText.right
     }
 
     ShadowText {
         id: scoreText
-        text: gameScene.score
+        text: levelBase.score
         pixelSize: 20
         anchors {
             bottom: gameContainer.top
@@ -144,9 +63,13 @@ SceneBase {
         }
     }
 
+    /* TODO
+     * Hier wird das "Bild" für den Hintergrund gesetzt. Das soll später eher
+     * von der erbenden QML Klasse, also dem einzelnen Level erledigt werden
+     */
     Item {
         id: gameContainer
-        width: gameScene.gridWidth
+        width: levelBase.gridWidth
         height: width
         anchors.centerIn: parent
         GameBackground {}
@@ -157,6 +80,10 @@ SceneBase {
         interval: 100
     }
 
+    /* Spiel Steuerung
+     * Für das Spielen mit einer Tastatureingabe
+     * Später bei Hexfeldern ist diese art der Steuerung dan nicht mehr möglich
+      */
     Keys.forwardTo: keyboardController
     Item {
         id: keyboardController
@@ -165,19 +92,19 @@ SceneBase {
             if (!system.desktopPlatform) return
             if (event.key === Qt.Key_Left && moveRelease.running === false) {
                 event.accepted = true
-                gameScene.moveLeft()
+                levelBase.moveLeft()
                 moveRelease.start()
             } else if (event.key === Qt.Key_Right && moveRelease.running === false) {
                 event.accepted = true
-                gameScene.moveRight()
+                levelBase.moveRight()
                 moveRelease.start()
             } else if (event.key === Qt.Key_Up && moveRelease.running === false) {
                 event.accepted = true
-                gameScene.moveUp()
+                levelBase.moveUp()
                 moveRelease.start()
             } else if (event.key === Qt.Key_Down && moveRelease.running === false) {
                 event.accepted = true
-                gameScene.moveDown()
+                levelBase.moveDown()
                 moveRelease.start()
             }
         }
@@ -186,7 +113,7 @@ SceneBase {
     MouseArea {
         id: mouseArea
 
-        anchors.fill: gameScene.gameWindowAnchorItem
+        anchors.fill: levelBase.gameWindowAnchorItem
 
         property int startX
         property int startY
@@ -213,16 +140,16 @@ SceneBase {
                     moving = true
 
                     if (deltaX > 30 && Math.abs(deltaY) < 30 && moveRelease.running === false) {
-                        gameScene.moveRight()
+                        levelBase.moveRight()
                         moveRelease.start()
                     } else if (deltaX < -30 && Math.abs(deltaY) < 30 && moveRelease.running === false) {
-                        gameScene.moveLeft()
+                        levelBase.moveLeft()
                         moveRelease.start()
                     } else if (deltaY > 30 && Math.abs(deltaX) < 30 && moveRelease.running === false) {
-                        gameScene.moveDown()
+                        levelBase.moveDown()
                         moveRelease.start()
                     } else if (deltaY < -30 && Math.abs(deltaX) < 30 && moveRelease.running === false) {
-                        gameScene.moveUp()
+                        levelBase.moveUp()
                         moveRelease.start()
                     }
                 }
@@ -230,29 +157,14 @@ SceneBase {
         }
     }
 
-    Text {
-        id: gameoverText
-        visible: false //Muss auf true gesetzt werden, wenns soweit ist
-        text: "GAME OVER "
-        color: "red"
-        anchors.centerIn: parent
-        font.pixelSize: 40
-    }
-
     BackButton {
         x: 10
         y: 10
         onClicked: {
-            saveGame()
+            Fun.saveGame()
+            Fun.saveHighscore()
             backButPressed()
-            saveHighscore()
         }
-    }
-
-    onBackButtonPressed: {
-        saveGame()
-        backButPressed()
-        saveHighscore()
     }
 
     Button2048 {
@@ -261,36 +173,67 @@ SceneBase {
         anchors.bottom: gameScene.bottom
         anchors.bottomMargin: 10
         onClicked: {
-            //Lösche den gespeicherten Spielstand und
-            //setze das Spielfeld neu auf
-            localStorage.clearValue("savedGame" + gridSizeGame)
+            //TODO Lösche den gespeicherten Spielstand und setze das Spielfeld neu auf
+            //localStorage.clearValue("savedGame" + gridSizeGame)
+
             //Speicher bei Bedarf den aktuellen Highscore
-            saveHighscore()
-            setUpGame(gridSizeGame)
+            //Fun.saveHighscore(); setUpGame(gridSizeGame);
         }
         text: "Restart"
     }
 
+    /* TODO Dieser Button soll nicht uneingeschränkt immer verfügbar sein
+     * Füge einen Counter ein, der anzeigt wie häufig noch resetet werden kann
+     */
     Button2048 {
         id: undoButton
         anchors.right: gameContainer.right
         anchors.bottom: resetButton.bottom
         onClicked: {
-            if (restoreStr !== undefined) {
-                restore(restoreStr, gridSizeGame)
-            }
+            //if (restoreStr !== undefined) restore(restoreStr)
         }
         text: "Undo"
     }
 
     Component.onCompleted: {
-        setUpGame(gridSizeGame)
+        setUpGame(levelID)
+    }
+
+    //TODO GameOver Popup einfügen
+
+
+    /* Konfiguriere das Level anhand seiner ID
+     * Lade dazu den Kofigurationsstring
+     *
+    */
+    function setUpGame(levelID) {
+        //TODO Lade hier die Kofigutation eines Levels
+
+        //Lade hier den letzten Spielstand, falls dieser existiert
+        loadGame(levelID)
+
+        //TODO Lade den persönlichen besten Highscore
+    }
+
+    /* TODO
+     * Lade den letzten Spielstand, falls es einen gespeicherten Spielstand gibt
+     * return true if game is loaded, false otherwise
+    */
+    function loadGame(levelID) {
+        //TODO
+    }
+
+    /* TODO
+     * Benutze den restoreStr zum wiederherstellen
+    */
+    function restore(restoreString) {
+        //TODO
     }
 
     //extract and save emptyCells from tileItems
     function updateEmptyCells() {
         emptyCells = []
-        for (var i = 0; i < gridSizeGameSquared; i++) {
+        for (var i = 0; i < gridSizeGame; i++) {
             if (tileItems[i] === null) {
                 emptyCells.push(i)
             }
@@ -299,6 +242,7 @@ SceneBase {
 
     //creates new tile at random index
     //positioning and value setting happens inside the tile class
+    //TODO überarbeiten!
     function createNewTile() {
         if (emptyCells.length < 1) return
         //get random emptyCells:
@@ -345,19 +289,9 @@ SceneBase {
     }
 
     function gameOver() {
-        saveHighscore()
-        //Zeige an, dass das Spiel vorbei ist
+        Fun.saveHighscore()
         //Reseten des Spielfeldes erst wenn der Spieler bestätigt hat
-        gameoverText.visible = true
-    }
-
-    function saveHighscore() {
-        //Speicher den Highscore, falls der alte niedriger war
-        var high = "highscore" + gridSizeGame
-        var hs = localStorage.getValue(high)
-        if ((hs === undefined) || (hs < score)) {
-            localStorage.setValue(high, score)
-        }
+        //Popup zeigen, dass gameOver ist
     }
 
     function merge(sourceRow) {
@@ -365,10 +299,12 @@ SceneBase {
         var nonEmptyTiles = [] //sourceRow without empty tiles
         var indices = []
 
+        //TODO Sobald es nicht bewegliche Blöcke gibt muss hier eine Änderung für diese
+        //implemetiert werden
         //remove zero/empty elements
         for (i = 0; i < sourceRow.length; i++) {
             indices[i] = nonEmptyTiles.length
-            if (sourceRow[i] > 0) {
+            if (sourceRow[i] !== "") {
                 nonEmptyTiles.push(sourceRow[i])
             }
         }
@@ -381,7 +317,8 @@ SceneBase {
                 mergedRow.push(nonEmptyTiles[i])
             } else {
                 //comparing if values are mergeable
-                if (nonEmptyTiles[i] === nonEmptyTiles[i + 1]) {
+                //Und die Teile müssen bigInts sein
+                if ((nonEmptyTiles[i] === nonEmptyTiles[i + 1]) && (Big.isBigInt(nonEmptyTiles[i]))) {
                     for (j = 0; j < sourceRow.length; j++) {
                         if (indices[j] > mergedRow.length) {
                             indices[j] -= 1
@@ -408,19 +345,6 @@ SceneBase {
         return {mergedRow : mergedRow, indices: indices}
     }
 
-    function getRowAt(index) {
-        var row = []
-        for (var j = 0; j < gridSizeGame; j++) {
-            //if there are no tileItems at this spot, push(0) to the row, else push the tileIndex value
-            if (tileItems[j + index * gridSizeGame] === null) {
-                row.push(0)
-            } else {
-                row.push(tileItems[j + index * gridSizeGame].tileValue)
-            }
-        }
-        return row
-    }
-
     function saveCurrentState() {
         var saveArray = score.toString()
         for (var i = 0; i < tileItems.length; i++) {
@@ -436,7 +360,7 @@ SceneBase {
         var i, j
         var curState = saveCurrentState();
 
-        for (i = 0; i < gridSizeGame; i++) {
+        for (i = 0; i < gridSizeHeight; i++) {
             sourceRow = getRowAt(i)
             merger = merge(sourceRow)
             mergedRow = merger.mergedRow
@@ -450,36 +374,31 @@ SceneBase {
                     //checks if an element is not empty
                     if (sourceRow[j] > 0 && indices [j] !== j) {
                         //checks if a merge has happened and at what position
-                        if (mergedRow[indices[j]] > sourceRow[j] && tileItems[gridSizeGame * i + indices[j]] !== null) {
+                        //TODO hier sollte die Funktion nur rein springen
+                        if (mergedRow[indices[j]] > sourceRow[j] && tileItems[gridSizeHeight * i + indices[j]] !== null) {
                             //Move, merge and increment value of the merged element
                             //increment the value of the tile that got merged
-                            tileItems[gridSizeGame * i + indices[j]].tileValue++
+                            if (isBigInt) {
+
+                            }
+
+                            tileItems[gridSizeHeight * i + indices[j]].tileValue++ //TODO TODO TODO
                             //move second tile in the merge direction
-                            tileItems[gridSizeGame * i + j].moveTile(gridSizeGame * i + indices[j])
+                            tileItems[gridSizeHeight * i + j].moveTile(gridSizeHeight * i + indices[j])
                             //and destroy it
-                            tileItems[gridSizeGame * i + j].destroyTile()
+                            tileItems[gridSizeHeight * i + j].destroyTile()
                         } else {
                             //Move only
-                            tileItems[gridSizeGame * i + j].moveTile(gridSizeGame * i + indices[j])
-                            tileItems[gridSizeGame * i + indices[j]] = tileItems[gridSizeGame * i + j]
+                            tileItems[gridSizeHeight * i + j].moveTile(gridSizeHeight * i + indices[j])
+                            tileItems[gridSizeHeight * i + indices[j]] = tileItems[gridSizeHeight * i + j]
                         }
-                        tileItems[gridSizeGame * i + j] = null
+                        tileItems[gridSizeHeight * i + j] = null
                     }
                 }
             }
         }
 
-        if (isMoved) {
-            //update empty cells
-            updateEmptyCells()
-            //create new random position tile
-            createNewTile()
-            if (gridSizeGame > 4) {
-                createNewTile()
-                if (gridSizeGame > 6) createNewTile()
-            }
-            restoreStr = curState
-        }
+        if (isMoved) moveFinished(curState)
     }
 
     function moveRight() {
@@ -488,7 +407,7 @@ SceneBase {
         var i, j, k //k used for reversing
         var curState = saveCurrentState();
 
-        for (i = 0; i < gridSizeGame; i++) {
+        for (i = 0; i < gridSizeHeight; i++) {
             sourceRow = getRowAt(i).reverse()
             merger = merge(sourceRow)
             mergedRow = merger.mergedRow
@@ -508,31 +427,23 @@ SceneBase {
                     k = sourceRow.length - 1 - j
 
                     if (sourceRow[k] > 0 && indices[k] !== k) {
-                        if (mergedRow[indices[k]] > sourceRow[k] && tileItems[gridSizeGame * i + indices[k]] !== null) {
+                        if (mergedRow[indices[k]] > sourceRow[k] && tileItems[gridSizeHeight * i + indices[k]] !== null) {
                             // Move and merge
-                            tileItems[gridSizeGame * i + indices[k]].tileValue++
-                            tileItems[gridSizeGame * i + k].moveTile(gridSizeGame * i + indices[k])
-                            tileItems[gridSizeGame * i + k].destroyTile()
+                            tileItems[gridSizeHeight * i + indices[k]].tileValue++
+                            tileItems[gridSizeHeight * i + k].moveTile(gridSizeHeight * i + indices[k])
+                            tileItems[gridSizeHeight * i + k].destroyTile()
                         } else {
                             // Move only
-                            tileItems[gridSizeGame * i + k].moveTile(gridSizeGame * i + indices[k])
-                            tileItems[gridSizeGame * i + indices[k]] = tileItems[gridSizeGame * i + k]
+                            tileItems[gridSizeHeight * i + k].moveTile(gridSizeHeight * i + indices[k])
+                            tileItems[gridSizeHeight * i + indices[k]] = tileItems[gridSizeHeight * i + k]
                         }
-                        tileItems[gridSizeGame * i + k] = null
+                        tileItems[gridSizeHeight * i + k] = null
                     }
                 }
             }
         }
 
-        if (isMoved) {
-            updateEmptyCells()
-            createNewTile()
-            if (gridSizeGame > 4) {
-                createNewTile()
-                if (gridSizeGame > 6) createNewTile()
-            }
-            restoreStr = curState
-        }
+        if (isMoved) moveFinished(curState)
     }
 
     function moveUp() {
@@ -569,17 +480,7 @@ SceneBase {
             }
         }
 
-        if (isMoved) {
-            // update empty cells
-            updateEmptyCells()
-            // create new random position tile
-            createNewTile()
-            if (gridSizeGame > 4) {
-                createNewTile()
-                if (gridSizeGame > 6) createNewTile()
-            }
-            restoreStr = curState
-        }
+        if (isMoved) moveFinished(curState)
     }
 
     function moveDown() {
@@ -626,31 +527,44 @@ SceneBase {
             }
         }
 
-        if (isMoved) {
-            updateEmptyCells()
-            createNewTile()
-            if (gridSizeGame > 4) {
-                createNewTile()
-                if (gridSizeGame > 6) createNewTile()
-            }
-            restoreStr = curState
-        }
+        if (isMoved) moveFinished(curState)
     }
 
-    function getColumnAt(index) {
+    function moveFinished(curState) { //Done
+        updateEmptyCells()
+        for (var i = 0; i < newTilesPerMove; i++) {
+            createNewTile()
+        }
+        restoreStr = curState
+    }
+
+    function getColumnAt(index) { //Done
         var column = []
-        for (var j = 0; j < gridSizeGame; j++) {
-            //if there are no tileItems at this spot, push(0) to the column, else push the tileIndex value
-            if (tileItems[index + j * gridSizeGame] === null) {
-                column.push(0)
+        for (var j = 0; j < gridSizeHeight; j++) {
+            //if there are no tileItems at this spot, push("") to the column, else push the tileIndex value
+            if (tileItems[index + j * gridSizeWidth] === null) {
+                column.push("")
             } else {
-                column.push(tileItems[index + j * gridSizeGame].tileValue)
+                column.push(tileItems[index + j * gridSizeWidth].tileValue)
             }
         }
         return column
     }
 
-    function arraysIdentical(a, b) {
+    function getRowAt(index) { //Done
+        var row = []
+        for (var j = 0; j < gridSizeWidth; j++) {
+            //if there are no tileItems at this spot, push("") to the row, else push the tileIndex value
+            if (tileItems[j + index * gridSizeHeight] === null) {
+                row.push("")
+            } else {
+                row.push(tileItems[j + index * gridSizeHeight].tileValue)
+            }
+        }
+        return row
+    }
+
+    function arraysIdentical(a, b) { //Done
         var i = a.length
         if (i !== b.length) return false
         while (i--) {
@@ -658,4 +572,5 @@ SceneBase {
         }
         return true
     }
+
 }

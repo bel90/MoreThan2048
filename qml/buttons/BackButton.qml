@@ -12,8 +12,7 @@ Rectangle {
     signal clicked
 
     Image {
-        //source: "../../svg/backButton.svg"
-        source: "../../assets/backButton.png"
+        source: "../../assets/backButtonGreen.png" //"../../assets/backButton.png"
         height: 40
         width: 40
     }
@@ -24,6 +23,8 @@ Rectangle {
         hoverEnabled: true
         onClicked: backButton.clicked()
         onPressed: backButton.opacity = 0.5
-        onReleased: backButton.opacity = 1
+        onReleased: backButton.opacity = 0.8
     }
+
+    Component.onCompleted: backButton.opacity = 0.8
 }

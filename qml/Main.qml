@@ -27,12 +27,22 @@ GameWindow {
         id: localStorage
     }
 
+    EntityManager {
+        id: entityManager
+        entityContainer: gameScene.gameContainer
+    }
+
     GameScene2048 {
         id: gameScene
         onBackButPressed: {
             gameWindow.state = "selectLevelScene"
         }
     }
+
+    LevelBase {
+        id: levelBase
+    }
+
 /*
     CreditsScene {
         id:creditsScene
@@ -59,6 +69,11 @@ GameWindow {
             name: "gameScene"
             PropertyChanges {target: gameScene; opacity: 1}
             PropertyChanges {target: gameWindow; activeScene: gameScene}
+        },
+        State {
+            name: "levelBase"
+            PropertyChanges {target: levelBase; opacity: 1}
+            PropertyChanges {target: gameWindow; activeScene: levelBase}
         }
     ]
 
